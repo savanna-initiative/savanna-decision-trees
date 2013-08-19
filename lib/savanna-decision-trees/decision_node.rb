@@ -19,5 +19,15 @@ module Savanna
       set_two = rows.select { |row| split_function.call(row) == false }
       return [set_one, set_two]
     end
+
+    def count_uniq(rows, column)
+      output = {}
+      rows.each do |row|
+        r = row[column].to_s
+        output[r] ||= 0
+        output[r] += 1
+      end
+      return output
+    end
   end
 end
