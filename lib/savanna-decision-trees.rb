@@ -1,7 +1,1 @@
-module Savanna
-  module DecisionTrees
-
-
-
-  end
-end
+require_relative 'savanna-decision-trees/savanna-decision-trees'
