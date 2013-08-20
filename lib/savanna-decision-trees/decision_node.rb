@@ -20,7 +20,8 @@ module Savanna
       return [set_one, set_two]
     end
 
-    def count_uniq(rows, column)
+    def count_uniq(rows, column = nil)
+      column ||= rows.first.size - 1
       output = {}
       rows.each do |row|
         r = row[column].to_s
@@ -28,6 +29,32 @@ module Savanna
         output[r] += 1
       end
       return output
+    end
+
+    def gini_impurity(rows, column = nil)
+      total = rows.size
+      counts = count_uniq(rows, column)
+      imp = 0
+      counts.each_key do |key_one|
+        p_one = counts[key_one].to_f/total
+        counts.each_key do |key_two|
+          next if key_one == key_two
+          p_two = counts[key_two].to_f/total
+          imp += p_one*p_two
+        end
+      end
+      return imp
+    end
+
+    def entropy(rows, column = nil)
+      log_two = Proc.new { |x| Math.log(x)/Math.log(2) }
+      results = count_uniq(rows, column)
+      ent = 0.0
+      results.each_key do |r|
+        p = results[r].to_f/rows.size
+        ent = ent - p*log_two.call(p)
+      end
+      return ent
     end
   end
 end
