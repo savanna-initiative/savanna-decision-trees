@@ -91,5 +91,31 @@ module Savanna
        	return DecisionNode.new(nil, nil, count_uniq(rows), nil, nil)
       end
     end
+
+    def classify(observation, tree)
+      if tree.results != nil
+        return tree.results
+       else
+       	v = observation[tree.col]
+       	branch = nil
+       	if v.class == Fixnum or v.class == Integer or v.class == Float
+       	  (v >= tree.value)? (branch = tree.tb) : (branch = tree.fb)
+       	 else
+       	  (v == tree.value)? (branch = tree.tb) : (branch = tree.fb)
+       	end
+       	return classify(observation, branch)
+      end      
+    end
+
+    def self.hashify_tree(tree)
+      output_hash = {}
+      if tree.results != nil
+        return tree.results
+       else
+       	output_hash["#{tree.col}: #{tree.value}"] = hashify_tree(tree.tb).merge(hashify_tree(tree.fb))
+      end
+      return output_hash
+    end
+
   end
 end
