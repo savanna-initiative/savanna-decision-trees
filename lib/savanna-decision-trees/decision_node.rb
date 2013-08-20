@@ -1,5 +1,7 @@
 module Savanna
   class DecisionNode
+  	attr_reader :col, :value, :results, :tb, :fb
+
     def initialize(col = -1, value = nil, results = nil, tb = nil, fb = nil)
       @col = col
       @value = value
@@ -47,6 +49,7 @@ module Savanna
     end
 
     def entropy(rows, column = nil)
+      return 0.0 if rows.size == 0
       log_two = Proc.new { |x| Math.log(x)/Math.log(2) }
       results = count_uniq(rows, column)
       ent = 0.0
@@ -56,5 +59,63 @@ module Savanna
       end
       return ent
     end
+
+    def build_tree(rows)
+      return DecisionNode.new if rows.size == 0
+      current_score = entropy(rows)
+      best_gain = 0.0
+      best_criteria = nil
+      best_sets = nil
+      column_count = rows[0].size - 2
+      (0..column_count).to_a.each do |col|
+        column_values = {}
+        rows.each {|row| column_values[row[col]] = 1}
+        column_values.each_key do |value|
+          devided_set = divide_set(rows,col,value)
+          set_one = devided_set[0]
+          set_two = devided_set[1]
+          p = set_one.size.to_f/rows.size
+          gain = current_score - p*entropy(set_one) - (1 - p)*entropy(set_two)          
+          if gain > best_gain && set_one.size > 0 && set_two.size > 0
+            best_gain = gain
+            best_criteria = [col, value]
+            best_sets = [set_one, set_two]
+          end
+        end
+      end
+      if best_gain > 0
+        true_branch = build_tree(best_sets[0])
+        false_branch = build_tree(best_sets[1])
+        return DecisionNode.new(best_criteria[0], best_criteria[1], nil, true_branch, false_branch)
+       else
+       	return DecisionNode.new(nil, nil, count_uniq(rows), nil, nil)
+      end
+    end
+
+    def classify(observation, tree)
+      if tree.results != nil
+        return tree.results
+       else
+       	v = observation[tree.col]
+       	branch = nil
+       	if v.class == Fixnum or v.class == Integer or v.class == Float
+       	  (v >= tree.value)? (branch = tree.tb) : (branch = tree.fb)
+       	 else
+       	  (v == tree.value)? (branch = tree.tb) : (branch = tree.fb)
+       	end
+       	return classify(observation, branch)
+      end      
+    end
+
+    def self.hashify_tree(tree)
+      output_hash = {}
+      if tree.results != nil
+        return tree.results
+       else
+       	output_hash["#{tree.col}: #{tree.value}"] = hashify_tree(tree.tb).merge(hashify_tree(tree.fb))
+      end
+      return output_hash
+    end
+
   end
 end
